@@ -125,13 +125,17 @@ namespace Tedd
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddTimeMeasurement(Int64 ticks, int sampleCount = 1)
         {
-            if (sampleCount < 1)
+            if (Options.IsAverage && sampleCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(sampleCount));
 
-            if (Options.ProfilerType == ProfilerType.SampleAverageTimeMs || Options.ProfilerType== ProfilerType.SampleAveragePerSecond)
-                _timeMeasurements.Enqueue(new TimeMeasurement(ticks: ticks, timestampTicks: _stopwatch.ElapsedTicks, sampleCount: sampleCount));
+            if (Options.IsAverage)
+            {
+                _timeMeasurements.Enqueue(new TimeMeasurement(ticks: ticks, timestampTicks: _stopwatch.ElapsedTicks,
+                    sampleCount: sampleCount));
 
-            Interlocked.Add(ref _sampleCount, sampleCount);
+                Interlocked.Add(ref _sampleCount, sampleCount);
+            }
+
             Interlocked.Add(ref _sampleTotalTime, ticks);
         }
 
@@ -142,7 +146,7 @@ namespace Tedd
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Cleanup()
         {
-            if (Options.ProfilerType != ProfilerType.SampleAverageTimeMs && Options.ProfilerType != ProfilerType.SampleAveragePerSecond)
+            if (!Options.IsAverage)
                 return;
 
             Int32 sc = 0;
@@ -173,8 +177,10 @@ namespace Tedd
             }
 
             // Atomic update of global counters
-            Interlocked.Add(ref _sampleCount, -sc);
-            Interlocked.Add(ref _sampleTotalTime, -t);
+            if (sc != 0)
+                Interlocked.Add(ref _sampleCount, -sc);
+            if (t != 0)
+                Interlocked.Add(ref _sampleTotalTime, -t);
 
         }
 
@@ -187,16 +193,21 @@ namespace Tedd
 
         public double GetValue()
         {
+            Cleanup();
+
             if (Options.ProfilerType == ProfilerType.Counter)
                 return Counter;
 
             if (Options.ProfilerType == ProfilerType.TimeTotal)
-                return (double)(_sampleTotalTime / 10_000D);
+                return (double)_sampleTotalTime / 10_000D;
 
-            if (_sampleCount == 0)
-                return 0;
             if (Options.ProfilerType == ProfilerType.SampleAverageTimeMs)
-                return (double)(((double)_sampleTotalTime / (double)_sampleCount) / 10_000D);
+            {
+                if (_sampleCount == 0)
+                    return 0;
+
+                return (double) (((double) _sampleTotalTime / (double) _sampleCount) / 10_000D);
+            }
 
             throw new Exception($"Unknown ProfilerType {Options.ProfilerType}");
         }
