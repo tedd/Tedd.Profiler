@@ -1,0 +1,206 @@
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net.Mime;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+
+namespace Tedd
+{
+    public class Profiler
+    {
+        private static readonly ObjectPool<ProfilerTimer> ProfileTimerPool = new ObjectPool<ProfilerTimer>(() => new ProfilerTimer(), 20);
+        private readonly ConcurrentQueue<TimeMeasurement> _timeMeasurements = new ConcurrentQueue<TimeMeasurement>();
+        private int _sampleCount = 0;
+        private Int64 _sampleTotalTime = 0;
+        public readonly ProfilerOptions Options;
+        public readonly string Name;
+        private Int64 _counter;
+        public Int64 Counter { get => _counter; }
+        private string _text;
+
+        public string Text { get => _text; }
+
+        private readonly Stopwatch _stopwatch = new Stopwatch();
+
+        //[CallerMemberName] string name = ""
+        public Profiler(ProfilerOptions options, string name)
+        {
+            Options = options;
+            Name = name;
+            _stopwatch.Start();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public Profiler(ProfilerOptions options)
+        {
+            Options = options;
+            var stackTrace = new StackTrace();
+            var callingFrame = stackTrace.GetFrame(1);
+            var callingMethod = callingFrame.GetMethod();
+            if (!callingMethod.IsStatic)
+                throw new Exception("Profiler() created from non-static. Creating profiler without name has huge overhead due to stack analysis. Only do so from static context so it minimizes number of times it is done.");
+            Name = callingMethod.DeclaringType.FullName;
+        }
+
+
+        /// <summary>
+        /// Increase Counter by locking.
+        /// Hint: For use in multi-threading scenarios where accuracy is important. Costs 10x or more performance compared to Inc(). 
+        /// </summary>
+        /// <returns>New value of Counter</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Int64 AtomicInc() => Interlocked.Increment(ref _counter);
+        /// <summary>
+        /// Increase Counter by locking.
+        /// Hint: For use in multi-threading scenarios where accuracy is important. Costs 10x or more performance compared to Inc(). 
+        /// </summary>
+        /// <returns>New value of Counter</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Int64 AtomicInc(int i) => Interlocked.Add(ref _counter, i);
+        /// <summary>
+        /// Decrease Counter by locking.
+        /// Hint: For use in multi-threading scenarios where accuracy is important. Costs 10x or more performance compared to Dec(). 
+        /// </summary>
+        /// <returns>New value of Counter</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Int64 AtomicDec() => Interlocked.Decrement(ref _counter);
+        /// <summary>
+        /// Decrease Counter by locking.
+        /// Hint: For use in multi-threading scenarios where accuracy is important. Costs 10x or more performance compared to Dec(). 
+        /// </summary>
+        /// <returns>New value of Counter</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Int64 AtomicDec(int i) => Interlocked.Add(ref _counter, -i);
+
+        /// <summary>
+        /// Increase Counter.
+        /// </summary>
+        /// <returns>New value of Counter</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Inc(int i = 1) => _counter += i;
+        /// <summary>
+        /// Decrease Counter.
+        /// </summary>
+        /// <returns>New value of Counter</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dec(int i = 1) => _counter -= i;
+
+        /// <summary>
+        /// Sets Counter to number.
+        /// </summary>
+        /// <returns>New value of Counter</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Set(int i) => _counter = i;
+
+        /// <summary>
+        /// Sets text.
+        /// </summary>
+        /// <returns>New value of text</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Set(string text) => _text = text;
+
+        /// <summary>
+        /// Return a ProfileTimer object that allows
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ProfilerTimer CreateTimer() => ProfileTimerPool.Allocate().Start(this);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void FinishTimer(ProfilerTimer profilerInstance)
+        {
+            ProfileTimerPool.Free(profilerInstance);
+        }
+
+        /// <summary>
+        /// Add time measurements in ticks.
+        /// Hint 1: There are 10 000 ticks in 1 ms.
+        /// Hint 2: Stopwatch is a good source of high frequency timer, and it returns ticks.
+        /// </summary>
+        /// <param name="ticks">Number of ticks</param>
+        /// <param name="sampleCount">Number of samples this time measurement is for (used for average calculation)</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddTimeMeasurement(Int64 ticks, int sampleCount = 1)
+        {
+            if (sampleCount < 1)
+                throw new ArgumentOutOfRangeException(nameof(sampleCount));
+
+            if (Options.ProfilerType == ProfilerType.SampleAverageTimeMs || Options.ProfilerType== ProfilerType.SampleAveragePerSecond)
+                _timeMeasurements.Enqueue(new TimeMeasurement(ticks: ticks, timestampTicks: _stopwatch.ElapsedTicks, sampleCount: sampleCount));
+
+            Interlocked.Add(ref _sampleCount, sampleCount);
+            Interlocked.Add(ref _sampleTotalTime, ticks);
+        }
+
+        /// <summary>
+        /// When ProfileType is of type average we need to clean up history queue. This is normally done when GetValue is called.
+        /// But if GetValue() is not called regularly this may cause history buffer to fill up.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Cleanup()
+        {
+            if (Options.ProfilerType != ProfilerType.SampleAverageTimeMs && Options.ProfilerType != ProfilerType.SampleAveragePerSecond)
+                return;
+
+            Int32 sc = 0;
+            Int64 t = 0;
+            // Remove excess over max count
+            while (_timeMeasurements.Count > Options.MaxHistoryItems)
+            {
+                if (_timeMeasurements.TryDequeue(out var tm))
+                {
+                    sc += tm.SampleCount;
+                    t += tm.Ticks;
+                }
+            }
+
+            // Remove expired
+            while (_timeMeasurements.TryPeek(out var tm))
+            {
+                var age = _stopwatch.ElapsedTicks - tm.TimestampTicks;
+                if (age < Options.MaxHistoryAgeTicks)
+                    break;
+
+                // If Cleanup was run from another thread simultaneously we may fail in dequeue, or dequeue an item that is not expired. That is fine...
+                if (_timeMeasurements.TryDequeue(out tm))
+                {
+                    sc += tm.SampleCount;
+                    t += tm.Ticks;
+                }
+            }
+
+            // Atomic update of global counters
+            Interlocked.Add(ref _sampleCount, -sc);
+            Interlocked.Add(ref _sampleTotalTime, -t);
+
+        }
+
+        public string GetText()
+        {
+            if (Options.ProfilerType == ProfilerType.Text)
+                return Text;
+            return GetValue().ToString();
+        }
+
+        public double GetValue()
+        {
+            if (Options.ProfilerType == ProfilerType.Counter)
+                return Counter;
+
+            if (Options.ProfilerType == ProfilerType.TimeTotal)
+                return (double)(_sampleTotalTime / 10_000D);
+
+            if (_sampleCount == 0)
+                return 0;
+            if (Options.ProfilerType == ProfilerType.SampleAverageTimeMs)
+                return (double)(((double)_sampleTotalTime / (double)_sampleCount) / 10_000D);
+
+            throw new Exception($"Unknown ProfilerType {Options.ProfilerType}");
+        }
+
+
+    }
+}
