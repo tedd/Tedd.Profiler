@@ -2,10 +2,27 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.0.1-beta.1</Version>
+    <Description>Simple tool for measuring time or count within application</Description>
+    <Authors>Tedd Hansen</Authors>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReleaseNotes>Initial release. Measuring working, but missing central collector for useful output.</PackageReleaseNotes>
+    <RepositoryType>Git</RepositoryType>
+    <PackageTags></PackageTags>
+    <RepositoryUrl>https://github.com/tedd/Tedd.Profiler.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/tedd/Tedd.Profiler</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Tedd.ObjectPool" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

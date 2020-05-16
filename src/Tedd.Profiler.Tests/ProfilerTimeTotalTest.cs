@@ -13,7 +13,7 @@ namespace Tedd.ProfilerTests
         {
             for (var max = 1; max < 100; max++)
             {
-                var profiler = new Profiler(new ProfilerOptions(ProfilerType.TimeTotal, max, 1000), nameof(TotalTest));
+                var profiler = new Profiler(new ProfilerOptions(ProfilerType.TimeTotal, max, 1000, null), nameof(TotalTest));
                 var queue = new Queue<int>();
                 for (var i = 0; i < 1000; i++)
                 {

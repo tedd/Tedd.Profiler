@@ -5,16 +5,6 @@ using Xunit;
 
 namespace Tedd.ProfilerTests
 {
-    public class ProfilerDivTest
-    {
-        [Fact]
-        public void UnknownProfileType()
-        {
-            var profiler = new Profiler(new ProfilerOptions((ProfilerType)12345), nameof(UnknownProfileType));
-            Assert.Throws<Exception>(() => profiler.GetText());
-        }
-    }
-
     public class ProfilerCounterTest
     {
         [Fact]

@@ -188,7 +188,10 @@ namespace Tedd
         {
             if (Options.ProfilerType == ProfilerType.Text)
                 return Text;
-            return GetValue().ToString();
+            if (Options.StringFormat != null)
+                return String.Format(Options.StringFormat, GetValue());
+            else
+                return GetValue().ToString();
         }
 
         public double GetValue()
@@ -201,12 +204,20 @@ namespace Tedd
             if (Options.ProfilerType == ProfilerType.TimeTotal)
                 return (double)_sampleTotalTime / 10_000D;
 
+            if (Options.ProfilerType == ProfilerType.SampleAveragePerSecond)
+            {
+                if (_sampleCount == 0)
+                    return 0;
+
+                return 1D / ((double)(((double)_sampleTotalTime / (double)_sampleCount) / 10_000D));
+            }
+
             if (Options.ProfilerType == ProfilerType.SampleAverageTimeMs)
             {
                 if (_sampleCount == 0)
                     return 0;
 
-                return (double) (((double) _sampleTotalTime / (double) _sampleCount) / 10_000D);
+                return (double)(((double)_sampleTotalTime / (double)_sampleCount) / 10_000D);
             }
 
             throw new Exception($"Unknown ProfilerType {Options.ProfilerType}");

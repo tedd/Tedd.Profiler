@@ -10,21 +10,14 @@ namespace Tedd.ProfilerTests
 {
     public class ProfilerSampleAverageTimeMsTest
     {
-        private bool Compare(double a, double b)
-        {
-            if (a == b)
-                return true;
-            a *= 10000;
-            b *= 10000;
-            return (UInt32)a == (UInt32)b;
-        }
+
 
         [Fact]
         public void MaxHistoryTest()
         {
             for (var max = 1; max < 100; max++)
             {
-                var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, max, 1000), nameof(MaxHistoryTest));
+                var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, max, 1000, null), nameof(MaxHistoryTest));
                 Int64 totalCount = 0;
                 var avgCount = 0;
                 for (var i = 0; i < 1000; i++)
@@ -43,7 +36,7 @@ namespace Tedd.ProfilerTests
                 }
 
                 var avg = ((double)totalCount / 10_000D) / avgCount;
-                Assert.True(Compare(avg, profiler.GetValue()));
+                Assert.InRange(profiler.GetValue(), avg - 0.1D, avg + 0.1D);
                 Assert.Equal(profiler.GetValue().ToString(), profiler.GetText());
             }
         }
@@ -53,7 +46,7 @@ namespace Tedd.ProfilerTests
         {
             for (var max = 100; max < 200; max++)
             {
-                var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, max, 10), nameof(TimeExpireTest));
+                var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, max, 10, null), nameof(TimeExpireTest));
                 Int64 totalCount = 0;
                 var avgCount = 0;
                 for (var i = 0; i < 100; i++)
@@ -72,8 +65,12 @@ namespace Tedd.ProfilerTests
                     profiler.AddTimeMeasurement(r, a);
                 }
 
-                var avg = ((double)totalCount / 10_000D) / avgCount;
-                Assert.True(Compare(avg, profiler.GetValue()));
+                if (avgCount != 0 && totalCount != 0)
+                {
+                    var avg = ((double)totalCount / 10_000D) / avgCount;
+                    Assert.InRange(profiler.GetValue(), avg - 0.1D, avg + 0.1D);
+                }
+
                 Assert.Equal(profiler.GetValue().ToString(), profiler.GetText());
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => profiler.AddTimeMeasurement(1, 0));
@@ -91,7 +88,7 @@ namespace Tedd.ProfilerTests
             {
                 sw.Restart();
                 using var timer = profiler.CreateTimer();
-                while (sw.ElapsedMilliseconds < 10) {}
+                while (sw.ElapsedMilliseconds < 10) { }
                 timer.NewSample();
             }
             Assert.InRange(profiler.GetValue(), 4, 5.1);
