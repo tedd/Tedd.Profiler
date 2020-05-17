@@ -37,7 +37,7 @@ namespace Tedd
         {
             Stopwatch.Stop();
             _profiler.AddTimeMeasurement(Stopwatch.ElapsedTicks, SampleCount);
-            _profiler?.FinishTimer(this);
+            _profiler.FinishTimer(this);
         }
 
         public void Dispose()

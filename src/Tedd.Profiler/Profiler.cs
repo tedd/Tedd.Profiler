@@ -206,7 +206,7 @@ namespace Tedd
                 if (_sampleCount == 0)
                     return 0;
 
-                return 1D / ((double)(((double)_sampleTotalTime / (double)_sampleCount) / 10_000D));
+                return 1000D / ((double)(((double)_sampleTotalTime / (double)_sampleCount) / 10_000D));
             }
 
             if (Options.ProfilerType == ProfilerType.SampleAverageTimeMs)
