@@ -24,7 +24,7 @@ namespace Tedd.ProfilerTests
 
                 var s = queue.Select(s => (Int64)s).Sum() / 10_000D;
                 Assert.Equal(s, profiler.GetValue());
-                Assert.Equal(s.ToString(), profiler.GetText());
+                Assert.Equal(String.Format("{0:0,0.00}", s), profiler.GetText());
             }
         }
     }

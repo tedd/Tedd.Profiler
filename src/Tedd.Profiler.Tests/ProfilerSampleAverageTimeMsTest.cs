@@ -37,7 +37,7 @@ namespace Tedd.ProfilerTests
 
                 var avg = ((double)totalCount / 10_000D) / avgCount;
                 Assert.InRange(profiler.GetValue(), avg - 0.1D, avg + 0.1D);
-                Assert.Equal(profiler.GetValue().ToString(), profiler.GetText());
+                Assert.Equal(String.Format("{0:0,0.00}", profiler.GetValue()), profiler.GetText());
             }
         }
 
@@ -71,7 +71,7 @@ namespace Tedd.ProfilerTests
                     Assert.InRange(profiler.GetValue(), avg - 0.1D, avg + 0.1D);
                 }
 
-                Assert.Equal(profiler.GetValue().ToString(), profiler.GetText());
+                Assert.Equal(String.Format("{0:0,0.00}", profiler.GetValue()), profiler.GetText());
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => profiler.AddTimeMeasurement(1, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => profiler.AddTimeMeasurement(1, -1));

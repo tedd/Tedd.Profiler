@@ -8,7 +8,7 @@ namespace Tedd.ProfilerTests
     {
         private static class StaticCtor
         {
-            public static Profiler Profiler = new Profiler(new ProfilerOptions(ProfilerType.Counter));
+            public static Profiler Profiler = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.Counter));
         }
 
         [Fact]
@@ -25,6 +25,7 @@ namespace Tedd.ProfilerTests
             var profiler = new Profiler(new ProfilerOptions((ProfilerType)12345), nameof(UnknownProfileTypeTest));
             Assert.Throws<Exception>(() => profiler.GetText());
         }
+
         [Fact]
         public void FormatterTest()
         {

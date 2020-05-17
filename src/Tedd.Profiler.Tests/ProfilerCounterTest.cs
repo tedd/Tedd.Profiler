@@ -7,11 +7,7 @@ namespace Tedd.ProfilerTests
 {
     public class ProfilerCounterTest
     {
-        [Fact]
-        public void NonStaticNonDescriptiveCtorTest()
-        {
-            Assert.Throws<Exception>(() => new Profiler(new ProfilerOptions(ProfilerType.Counter)));
-        }
+
 
         [Fact]
         public void CounterTest()
@@ -66,7 +62,7 @@ namespace Tedd.ProfilerTests
                 Task.Run(() => AtomicAddLoop(profiler, ref sum))
                 }
             );
-            Assert.Equal( sum, profiler.Counter);
+            Assert.Equal(sum, profiler.Counter);
         }
 
         private void AtomicAddLoop(Profiler profiler, ref Int64 sum)
@@ -102,7 +98,7 @@ namespace Tedd.ProfilerTests
                     Task.Run(() => AddLoop(profiler, ref sum))
                 }
             );
-             Assert.NotEqual(sum, profiler.Counter);
+            Assert.NotEqual(sum, profiler.Counter);
         }
 
         private void AddLoop(Profiler profiler, ref Int64 sum)

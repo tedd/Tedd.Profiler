@@ -9,12 +9,13 @@ using System.Threading;
 
 namespace Tedd
 {
-    public class Profiler
+    public class Profiler:IDisposable
     {
         private static readonly ObjectPool<ProfilerTimer> ProfileTimerPool = new ObjectPool<ProfilerTimer>(() => new ProfilerTimer(), 20);
         private readonly ConcurrentQueue<TimeMeasurement> _timeMeasurements = new ConcurrentQueue<TimeMeasurement>();
         private int _sampleCount = 0;
         private Int64 _sampleTotalTime = 0;
+        private ProfilerRoot _profilerRoot;
         public readonly ProfilerOptions Options;
         public readonly string Name;
         private Int64 _counter;
@@ -33,16 +34,12 @@ namespace Tedd
             _stopwatch.Start();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public Profiler(ProfilerOptions options)
+        internal Profiler(ProfilerRoot profilerRoot,ProfilerOptions options, string name)
         {
+            _profilerRoot = profilerRoot;
             Options = options;
-            var stackTrace = new StackTrace();
-            var callingFrame = stackTrace.GetFrame(1);
-            var callingMethod = callingFrame.GetMethod();
-            if (!callingMethod.IsStatic)
-                throw new Exception("Profiler() created from non-static. Creating profiler without name has huge overhead due to stack analysis. Only do so from static context so it minimizes number of times it is done.");
-            Name = callingMethod.DeclaringType.FullName;
+            Name = name;
+            _stopwatch.Start();
         }
 
 
@@ -224,5 +221,28 @@ namespace Tedd
         }
 
 
+        #region IDisposable
+
+        private void CheckLeak()
+        {
+            if (_profilerRoot != null)
+                throw new Exception($"{nameof(Profiler)} created from {nameof(ProfilerRoot)} but not disposed, this causes leak in {nameof(ProfilerRoot)}.");
+        }
+
+        /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
+        public void Dispose()
+        {
+            _profilerRoot?.RemoveProfiler(this);
+            _profilerRoot = null;
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>Allows an object to try to free resources and perform other cleanup operations before it is reclaimed by garbage collection.</summary>
+        ~Profiler()
+        {
+            CheckLeak();
+        }
+
+        #endregion
     }
 }
