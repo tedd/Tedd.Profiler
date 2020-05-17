@@ -9,7 +9,7 @@ namespace Tedd.ProfilerExample.Workers
 {
     public class OperationsPerSecond: IWorker
     {
-        private static readonly Profiler _profiler = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAveragePerSecond));
+        private static readonly Profiler _profiler = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAveragePerSecond, 20_00_000, 10_000));
 
         private bool _running = false;
         public Task Task { get; private set; }
@@ -33,13 +33,15 @@ namespace Tedd.ProfilerExample.Workers
                 // Using is scoped
                 using (var timer = _profiler.CreateTimer())
                 {
-                    Thread.Sleep(ConcurrentRandom.Next(2, 100));
+                    // Do some heavy stuff
+                    //Thread.Sleep(ConcurrentRandom.Next(2, 100));
                 }
 
                 // Is the same as
                 {
                     using var timer = _profiler.CreateTimer();
-                    Thread.Sleep(ConcurrentRandom.Next(2, 100));
+                    // Do some heavy stuff
+                    //Thread.Sleep(ConcurrentRandom.Next(2, 100));
                 }
 
             }

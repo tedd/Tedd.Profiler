@@ -41,7 +41,7 @@ namespace Tedd.ProfilerExample
                 }
 
                 // Update screen only every so often
-                Thread.Sleep(100);
+                Thread.Sleep(50);
 
                 // Check for Q keypress
                 if (Console.KeyAvailable && Console.ReadKey().KeyChar.ToString().ToUpper() == "Q")

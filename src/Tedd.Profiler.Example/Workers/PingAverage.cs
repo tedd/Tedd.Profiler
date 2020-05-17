@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 
 namespace Tedd.ProfilerExample.Workers
 {
-    public class PingAverage: IWorker
+    public class PingAverage : IWorker
     {
+        // Set up a Profiler using default ProfilerRoot
         private static readonly Profiler _profiler = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
 
         private bool _running = false;
@@ -16,17 +17,20 @@ namespace Tedd.ProfilerExample.Workers
 
         public void Start()
         {
+            // Set up a task to run
             _running = true;
-            Task= Task.Run(RunLoop);
+            Task = Task.Run(RunLoop);
         }
 
         public void Stop()
         {
+            // Signal task to stop at next iteration
             _running = false;
         }
 
         private void RunLoop()
         {
+            // Set up ping
             var ping = new Ping();
             var options = new PingOptions()
             {
@@ -36,19 +40,22 @@ namespace Tedd.ProfilerExample.Workers
             var buffer = Encoding.ASCII.GetBytes(data);
             var timeout = 120;
 
+            // Do forever until Stop() is called
             while (_running)
             {
+                // Send ping
                 var reply = ping.Send("www.google.com", timeout, buffer, options);
                 if (reply.Status == IPStatus.Success)
                 {
-                    // Add a measurement
+                    // // // // // // // // // // // // // //
+                    // Add a measurement to our profiler.  //
+                    // // // // // // // // // // // // // //
                     _profiler.AddTimeMeasurement(reply.RoundtripTime * 10_000, 1);
                 }
 
-                // Lets not send too much ping
+                // Throttle so we don't flood target
                 Thread.Sleep(500);
             }
         }
-
     }
 }

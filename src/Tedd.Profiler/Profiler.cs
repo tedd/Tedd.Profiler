@@ -181,6 +181,10 @@ namespace Tedd
 
         }
 
+        /// <summary>
+        /// Get string representation of vaue.
+        /// </summary>
+        /// <returns></returns>
         public string GetText()
         {
             if (Options.ProfilerType == ProfilerType.Text)
@@ -191,6 +195,10 @@ namespace Tedd
                 return GetValue().ToString();
         }
 
+        /// <summary>
+        /// Get value
+        /// </summary>
+        /// <returns></returns>
         public double GetValue()
         {
             Cleanup();
@@ -229,7 +237,7 @@ namespace Tedd
                 throw new Exception($"{nameof(Profiler)} created from {nameof(ProfilerRoot)} but not disposed, this causes leak in {nameof(ProfilerRoot)}.");
         }
 
-        /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
+        /// <summary>Detaches Profiler from ProfilerRoot. This is necessary to avoid exception in Finalizer.</summary>
         public void Dispose()
         {
             _profilerRoot?.RemoveProfiler(this);
@@ -237,7 +245,7 @@ namespace Tedd
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>Allows an object to try to free resources and perform other cleanup operations before it is reclaimed by garbage collection.</summary>
+        /// <summary>If Dispose() was not run this will throw exception.</summary>
         ~Profiler()
         {
             CheckLeak();

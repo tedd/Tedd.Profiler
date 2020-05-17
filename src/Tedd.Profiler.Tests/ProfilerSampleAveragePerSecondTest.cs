@@ -31,7 +31,7 @@ namespace Tedd.ProfilerTests
                 }
 
                 var avg = ((double)totalCount / 10_000D) / avgCount;
-                avg = 1D / avg;
+                avg = 1_000D / avg;
                 Assert.InRange(profiler.GetValue(), avg - 0.1D, avg + 0.1D);
                 Assert.Equal(String.Format("{0:0,0.00}", profiler.GetValue()), profiler.GetText());
             }
