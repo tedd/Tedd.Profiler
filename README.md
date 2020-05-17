@@ -116,9 +116,11 @@ profiler.AddTimeMeasurement(15_000, 0); // 1.5 ms
 
 Calculating sample average time is done by keeping history of each record added. ProfilerOptions has parameters for cleaning up excess or expires items.
 
-During Cleanup() all excess items are removed from history and subtracted from global numbers. Cleanup() is run when you pull numbers (GetValue() or GetText()), you can also run it manually if you don't pull statistics so often but write a lot of samples.
+During Cleanup() all excess items are removed from history and subtracted from global numbers. Cleanup() is run on every sample, as well as when you pull numbers (GetValue() or GetText()).
 
-If you are looking for operations per second then keeping a maximum history of 100 records and 2 000 ms may be enough.
+You can set it to manual by setting AutoCleanup = false in ProfilerOptions. If you do that and you sample a lot of samples then it is important to run Cleanup() manually on the Profiler instance regularly, or sample history will fill up infinitely until cleaned by GetValue() or GetText().
+
+Tip: If you are looking for operations per second then keeping a maximum history of 100 records and 2 000 ms may be enough, there is usually no need for very large ranges.
 
 ```c#
 var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs), "Test");
@@ -154,4 +156,4 @@ Implementations are kept simple. Objects are pooled internally for reuse.
 
 The heaviest operation is averaging types, where a ConcurrentQueue keeps track of history. Adding a sample is relatively fast, but running Cleanup() (automatically run by GetValue()/GetText()) takes a bit more resources.
 
-A modern computer should be able to reach excess of 20 million measurements per second. Even with a history of 20 million entries and cleanup every 50ms it should reach excess of 17 million samples per second. You can test different parameters yourself inside OperationsPerSecond class in the Example project.
+A modern computer should be able to reach excess of 20 million measurements per second on a single core. Even with a history of 20 million entries and cleanup every 50ms it should reach excess of 17 million samples per second. You can test different parameters yourself inside OperationsPerSecond class in the Example project.
