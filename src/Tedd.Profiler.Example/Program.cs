@@ -34,7 +34,7 @@ namespace Tedd.ProfilerExample
                 Console.WriteLine("");
 
                 // Print result
-                foreach (var kv in ProfilerRoot.Default.GetMeasurements())
+                foreach (var kv in ProfilerGroup.Default.GetMeasurements())
                 {
                     var key = kv.Key.PadRight(50, ' ') + ": ";
                     Console.WriteLine(key + kv.Value.PadLeft(15, ' '));

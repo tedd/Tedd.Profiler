@@ -12,8 +12,8 @@ For example, averaging ping times:
 ```c#
 public class PingAverage: IWorker
 {
-    // Set up a Profiler using default ProfilerRoot
-    private static readonly Profiler _profiler = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
+    // Set up a Profiler using default ProfilerGroup
+    private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
 
     private bool _running = false;
     public Task Task { get; private set; }
@@ -62,11 +62,11 @@ public class PingAverage: IWorker
     }
 }
 ```
-Creating a Profiler using a ProfilerRoot allows us to pull the key+values from that.
+Creating a Profiler using a ProfilerGroup allows us to pull the key+values from all Profilers in that group.
 
 ```c#
 // Print result
-foreach (var kv in ProfilerRoot.Default.GetMeasurements())
+foreach (var kv in ProfilerGroup.Default.GetMeasurements())
 {
     var key = kv.Key.PadRight(50, ' ') + ": ";
     Console.WriteLine(key + kv.Value.PadLeft(15, ' '));

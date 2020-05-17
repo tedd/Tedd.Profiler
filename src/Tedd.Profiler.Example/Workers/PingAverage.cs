@@ -9,8 +9,8 @@ namespace Tedd.ProfilerExample.Workers
 {
     public class PingAverage : IWorker
     {
-        // Set up a Profiler using default ProfilerRoot
-        private static readonly Profiler _profiler = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
+        // Set up a Profiler using default ProfilerGroup
+        private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstanceWithPath(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
 
         private bool _running = false;
         public Task Task { get; private set; }

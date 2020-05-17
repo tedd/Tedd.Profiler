@@ -8,7 +8,7 @@ namespace Tedd.ProfilerTests
     {
         private static class StaticCtor
         {
-            public static Profiler Profiler = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.Counter));
+            public static Profiler Profiler = ProfilerGroup.Default.CreateInstanceWithPath(new ProfilerOptions(ProfilerType.Counter));
         }
 
         [Fact]

@@ -4,12 +4,12 @@ using Xunit;
 
 namespace Tedd.ProfilerTests
 {
-    public class ProfilerRootTest
+    public class ProfilerGroupTest
     {
         [Fact]
         public void NonStaticNonDescriptiveCtorTest()
         {
-            Assert.Throws<Exception>(() => ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.Counter)));
+            Assert.Throws<Exception>(() => ProfilerGroup.Default.CreateInstanceWithPath(new ProfilerOptions(ProfilerType.Counter)));
         }
 
         [Fact]
@@ -22,11 +22,11 @@ namespace Tedd.ProfilerTests
                 for (var i = 0; i < count; i++)
                 {
                     var name = nameof(GetTextTest) + string.Format("{0:0000}", (int)(i / 2));
-                    profilers[i] = ProfilerRoot.Default.CreateInstance(new ProfilerOptions(ProfilerType.Counter), name);
+                    profilers[i] = ProfilerGroup.Default.CreateInstance(new ProfilerOptions(ProfilerType.Counter), name);
                     profilers[i].Set(i + 10);
                 };
 
-                var list = ProfilerRoot.Default.GetMeasurements();
+                var list = ProfilerGroup.Default.GetMeasurements();
 
                 for (var i = 0; i < profilers.Length; i++)
                 {

@@ -15,7 +15,7 @@ namespace Tedd
         private readonly ConcurrentQueue<TimeMeasurement> _timeMeasurements = new ConcurrentQueue<TimeMeasurement>();
         private int _sampleCount = 0;
         private Int64 _sampleTotalTime = 0;
-        private ProfilerRoot _profilerRoot;
+        private ProfilerGroup _profilerGroup;
         public readonly ProfilerOptions Options;
         public readonly string Name;
         private Int64 _counter;
@@ -34,9 +34,9 @@ namespace Tedd
             _stopwatch.Start();
         }
 
-        internal Profiler(ProfilerRoot profilerRoot,ProfilerOptions options, string name)
+        internal Profiler(ProfilerGroup profilerGroup,ProfilerOptions options, string name)
         {
-            _profilerRoot = profilerRoot;
+            _profilerGroup = profilerGroup;
             Options = options;
             Name = name;
             _stopwatch.Start();
@@ -233,15 +233,15 @@ namespace Tedd
 
         private void CheckLeak()
         {
-            if (_profilerRoot != null)
-                throw new Exception($"{nameof(Profiler)} created from {nameof(ProfilerRoot)} but not disposed, this causes leak in {nameof(ProfilerRoot)}.");
+            if (_profilerGroup != null)
+                throw new Exception($"{nameof(Profiler)} created from {nameof(ProfilerGroup)} but not disposed, this causes leak in {nameof(ProfilerGroup)}.");
         }
 
-        /// <summary>Detaches Profiler from ProfilerRoot. This is necessary to avoid exception in Finalizer.</summary>
+        /// <summary>Detaches Profiler from ProfilerGroup. This is necessary to avoid exception in Finalizer.</summary>
         public void Dispose()
         {
-            _profilerRoot?.RemoveProfiler(this);
-            _profilerRoot = null;
+            _profilerGroup?.RemoveProfiler(this);
+            _profilerGroup = null;
             GC.SuppressFinalize(this);
         }
 
