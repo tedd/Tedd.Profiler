@@ -74,7 +74,9 @@ foreach (var kv in ProfilerGroup.Default.GetMeasurements())
 ```
 # Name
 
-When creating a Profiler you can choose any name. Multiple instances of the profiler can have same name. 
+When creating a Profiler you can choose any name. Multiple instances of the profiler can have same name.  
+
+If using ProfilerGroup.CreateInstanceWithPath(name) the full name of the class will precede name, for example MyApp.SomeNamespace.ClassName. You should then provide a name with a separator, such as ":method" or ".method".
 
 # Different modes
 
@@ -92,10 +94,24 @@ Each instance of the profiler can function in different modes.
 
 The counter can be increased, decreased or set. You can choose between atomic (thread safe) operation or not. An atomic operation uses Interlocked.Add or Interlocked.Inc to increase counter, whereas non-atomic simply add directly. Called directly the atomic is around 2x slower than non-atomic, but your actual result may vary. You must pick the best suited method for your use case.
 
+```c#
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.Counter), "Test");
+profiler.Inc(5);
+profiler.Dec();
+profiler.AtomicInc(1);
+profiler.AtomicDec(5);
+profiler.Set(3);
+```
 ## TimeTotal
 
 Similar to Counter, but uses the ticks-part of AddSample. It will get results from use of timer (with CreateTimer()).
 
+```c#
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.TimeTotal), "Test");
+profiler.AddTimeMeasurementMs(1, 0); // 1 ms
+profiler.AddTimeMeasurement(15_000, 0); // 1.5 ms
+// profiler.GetValue() is now: 2.5
+```
 ## SampleAverageTimeMs
 
 Calculating sample average time is done by keeping history of each record added. ProfilerOptions has parameters for cleaning up excess or expires items.
@@ -104,10 +120,34 @@ During Cleanup() all excess items are removed from history and subtracted from g
 
 If you are looking for operations per second then keeping a maximum history of 100 records and 2 000 ms may be enough.
 
+```c#
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs), "Test");
+profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
+using (var timer = profiler.CreateTimer()) // We measure 100ms for one sample
+{
+    Thread.Sleep(100);
+    timer.NewSample(); // We can take multiple samples within one timer
+    Thread.Sleep(100);
+}
+// profiler.GetValue() is now: 100.42275 ms average (4 samples over 400 ms total)
+// Result is not exactly 100 ms because Thread.Sleep has overhead + is not that accurate.
+```
 ## CountAveragePerSecond
 
 Same as SampleAverageTimeMs, except value calculated will be samples per second based on time one sample takes.
 
+```c#
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAveragePerSecond), "Test");
+profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
+using (var timer = profiler.CreateTimer()) // We measure 100ms for one sample
+{
+    Thread.Sleep(100);
+    timer.NewSample();
+    Thread.Sleep(100);
+}
+// profiler.GetValue() is now: 9.995
+// Average for one sample is approximately 100ms, which is approximately 10 per second.
+```
 # Performance
 
 Implementations are kept simple. Objects are pooled internally for reuse.

@@ -15,6 +15,7 @@ namespace Tedd
 
         private readonly SortedDictionary<string, HashSet<Profiler>> _profilers = new SortedDictionary<string, HashSet<Profiler>>();
         private readonly ReaderWriterLockSlim _profilesLockSlim = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        private readonly Timer _cleanupTimer ;
 
         /// <summary>
         /// Creates a new instance of Profiler with custom name.
@@ -27,6 +28,21 @@ namespace Tedd
             var profiler = new Profiler(this, options, name);
             AddProfiler(profiler);
             return profiler;
+        }
+
+        private void CleanupTimerTick(object state)
+        {
+            _profilesLockSlim.EnterReadLock();
+            try
+            {
+                foreach (var kvp in _profilers)
+                    foreach (var v in kvp.Value)
+                        v.Cleanup();
+            }
+            finally
+            {
+                _profilesLockSlim.ExitReadLock();
+            }
         }
 
         /// <summary>

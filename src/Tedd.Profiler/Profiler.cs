@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace Tedd
 {
-    public class Profiler:IDisposable
+    public class Profiler : IDisposable
     {
         private static readonly ObjectPool<ProfilerTimer> ProfileTimerPool = new ObjectPool<ProfilerTimer>(() => new ProfilerTimer(), 20);
         private readonly ConcurrentQueue<TimeMeasurement> _timeMeasurements = new ConcurrentQueue<TimeMeasurement>();
@@ -34,7 +34,7 @@ namespace Tedd
             _stopwatch.Start();
         }
 
-        internal Profiler(ProfilerGroup profilerGroup,ProfilerOptions options, string name)
+        internal Profiler(ProfilerGroup profilerGroup, ProfilerOptions options, string name)
         {
             _profilerGroup = profilerGroup;
             Options = options;
@@ -113,6 +113,19 @@ namespace Tedd
         }
 
         /// <summary>
+        /// Add time measurements in milliseconds.
+        /// Hint: Stopwatch is a good source of high frequency timer, and it returns milliseconds.
+        /// </summary>
+        /// <param name="ms">Number of milliseconds</param>
+        /// <param name="sampleCount">Number of samples this time measurement is for (used for average calculation)</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddTimeMeasurementMs(Int64 ms, int sampleCount = 1)
+        {
+            var sw = new Stopwatch();
+            AddTimeMeasurement((Int64)(ms * 10_000), sampleCount);
+        }
+
+        /// <summary>
         /// Add time measurements in ticks.
         /// Hint 1: There are 10 000 ticks in 1 ms.
         /// Hint 2: Stopwatch is a good source of high frequency timer, and it returns ticks.
@@ -134,6 +147,9 @@ namespace Tedd
             }
 
             Interlocked.Add(ref _sampleTotalTime, ticks);
+
+            if (Options.AutoClean)
+                Cleanup();
         }
 
         /// <summary>
@@ -159,10 +175,11 @@ namespace Tedd
             }
 
             // Remove expired
+            var maxHistoryAgeTicks = Options.MaxHistoryAgeMs * 10_000;
             while (_timeMeasurements.TryPeek(out var tm))
             {
                 var age = _stopwatch.ElapsedTicks - tm.TimestampTicks;
-                if (age < Options.MaxHistoryAgeTicks)
+                if (age < maxHistoryAgeTicks)
                     break;
 
                 // If Cleanup was run from another thread simultaneously we may fail in dequeue, or dequeue an item that is not expired. That is fine...
@@ -191,8 +208,8 @@ namespace Tedd
                 return Text;
             if (Options.StringFormat != null)
                 return String.Format(Options.StringFormat, GetValue());
-            else
-                return GetValue().ToString();
+            //else
+            return GetValue().ToString();
         }
 
         /// <summary>
