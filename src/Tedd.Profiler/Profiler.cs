@@ -140,7 +140,7 @@ namespace Tedd
 
             if (Options.IsAverage)
             {
-                _timeMeasurements.Enqueue(new TimeMeasurement(ticks: ticks, timestampTicks: _stopwatch.ElapsedTicks,
+                _timeMeasurements.Enqueue(new TimeMeasurement(ticks: ticks, timestampTicks: _stopwatch.Elapsed.Ticks,
                     sampleCount: sampleCount));
 
                 Interlocked.Add(ref _sampleCount, sampleCount);
@@ -178,7 +178,7 @@ namespace Tedd
             var maxHistoryAgeTicks = Options.MaxHistoryAgeMs * 10_000;
             while (_timeMeasurements.TryPeek(out var tm))
             {
-                var age = _stopwatch.ElapsedTicks - tm.TimestampTicks;
+                var age = _stopwatch.Elapsed.Ticks - tm.TimestampTicks;
                 if (age < maxHistoryAgeTicks)
                     break;
 

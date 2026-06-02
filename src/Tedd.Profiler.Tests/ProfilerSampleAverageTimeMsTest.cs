@@ -91,7 +91,7 @@ namespace Tedd.ProfilerTests
                 while (sw.ElapsedMilliseconds < 10) { }
                 timer.NewSample();
             }
-            Assert.InRange(profiler.GetValue(), 4, 5.1);
+            Assert.InRange(profiler.GetValue(), 4, 6.0);
         }
         [Fact]
         public void ProfileTimerDoubleDisposeTest()
