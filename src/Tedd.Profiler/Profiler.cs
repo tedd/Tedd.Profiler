@@ -115,13 +115,13 @@ namespace Tedd
         /// <summary>
         /// Add time measurements in milliseconds.
         /// Hint: Stopwatch is a good source of high frequency timer, and it returns milliseconds.
+        /// Complexity: Time: O(1), Space: O(1)
         /// </summary>
         /// <param name="ms">Number of milliseconds</param>
         /// <param name="sampleCount">Number of samples this time measurement is for (used for average calculation)</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddTimeMeasurementMs(Int64 ms, int sampleCount = 1)
         {
-            var sw = new Stopwatch();
             AddTimeMeasurement((Int64)(ms * 10_000), sampleCount);
         }
 
@@ -140,7 +140,7 @@ namespace Tedd
 
             if (Options.IsAverage)
             {
-                _timeMeasurements.Enqueue(new TimeMeasurement(ticks: ticks, timestampTicks: _stopwatch.ElapsedTicks,
+                _timeMeasurements.Enqueue(new TimeMeasurement(ticks: ticks, timestampTicks: _stopwatch.Elapsed.Ticks,
                     sampleCount: sampleCount));
 
                 Interlocked.Add(ref _sampleCount, sampleCount);
@@ -178,7 +178,7 @@ namespace Tedd
             var maxHistoryAgeTicks = Options.MaxHistoryAgeMs * 10_000;
             while (_timeMeasurements.TryPeek(out var tm))
             {
-                var age = _stopwatch.ElapsedTicks - tm.TimestampTicks;
+                var age = _stopwatch.Elapsed.Ticks - tm.TimestampTicks;
                 if (age < maxHistoryAgeTicks)
                     break;
 
