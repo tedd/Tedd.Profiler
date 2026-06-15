@@ -24,7 +24,8 @@ namespace Tedd.ProfilerTests
                     var name = nameof(GetTextTest) + string.Format("{0:0000}", (int)(i / 2));
                     profilers[i] = ProfilerGroup.Default.CreateInstance(new ProfilerOptions(ProfilerType.Counter), name);
                     profilers[i].Set(i + 10);
-                };
+                }
+                ;
 
                 var list = ProfilerGroup.Default.GetMeasurements();
 

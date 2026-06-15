@@ -26,10 +26,10 @@ namespace Tedd.ProfilerExample
 
             // Keep updating status on screen until user presses Q
             Console.Clear();
-            for (;;)
+            for (; ; )
             {
-                Console.SetCursorPosition(0,0);
-                
+                Console.SetCursorPosition(0, 0);
+
                 Console.WriteLine("Press Q to exit.");
                 Console.WriteLine("");
 
@@ -56,16 +56,15 @@ namespace Tedd.ProfilerExample
             Task.WaitAll(workers.Select(s => s.Task).ToArray());
 
 
-    var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAveragePerSecond), "Test");
-    profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
-    using (var timer = profiler.CreateTimer()) // We measure 100ms for one sample
-    {
-        Thread.Sleep(100);
-        timer.NewSample();
-        Thread.Sleep(100);
-    }
-    // profiler.GetValue() is now: 9.995 (average for one sample is approximately 100ms, which is approximately 10 per second)
-    var a = profiler.GetValue();
+            var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAveragePerSecond), "Test");
+            profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
+            using var timer = profiler.CreateTimer(); // We measure 100ms for one sample
+            Thread.Sleep(100);
+            timer.NewSample();
+            Thread.Sleep(100);
+
+            // profiler.GetValue() is now: 9.995 (average for one sample is approximately 100ms, which is approximately 10 per second)
+            var a = profiler.GetValue();
         }
     }
 }

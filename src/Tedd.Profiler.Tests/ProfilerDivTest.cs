@@ -45,7 +45,7 @@ namespace Tedd.ProfilerTests
 
                 }
 
-                var avg = Math.Round(((double) totalCount / 10_000D) / avgCount);
+                var avg = Math.Round(((double)totalCount / 10_000D) / avgCount);
                 Assert.Equal(avg.ToString(), profiler.GetText());
             }
         }

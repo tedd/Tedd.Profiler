@@ -7,7 +7,7 @@ using Tedd.RandomUtils;
 
 namespace Tedd.ProfilerExample.Workers
 {
-    public class OperationsPerSecond: IWorker
+    public class OperationsPerSecond : IWorker
     {
         private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstanceWithPath(new ProfilerOptions(ProfilerType.SampleAveragePerSecond, 20_00_000, 10_000));
 

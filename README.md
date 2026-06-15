@@ -3,6 +3,15 @@ Simple profiler for measuring parts of application.
 
 Availabe on NuGet: [https://www.nuget.org/packages/Tedd.Profiler](https://www.nuget.org/packages/Tedd.Profiler)
 
+# Architecture
+
+The framework utilizes a centralized architecture for measurement aggregation. The core components are:
+* **ProfilerGroup**: Acts as the central repository for profiler registration and telemetry aggregation, utilizing a `ReaderWriterLockSlim` for safe, high-performance concurrent access.
+* **Profiler**: Individual instances manage localized telemetry using a thread-safe `ConcurrentQueue<TimeMeasurement>` to maintain history for rolling averages, ensuring deterministic and accurate metrics under load.
+
+### Roadmap (Hypotheses)
+The current iteration focuses on localized telemetry aggregation. Future architectural enhancements—specifically, a hierarchical data binding model and a routed event infrastructure—are currently planned as theoretical additions. These capabilities are hypotheses under evaluation and do not represent existing functional mechanics within the framework.
+
 # Examples
 
 The Tedd.Profiler.Examples project contains examples on how to use profiler. 
@@ -13,7 +22,7 @@ For example, averaging ping times:
 public class PingAverage: IWorker
 {
     // Set up a Profiler using default ProfilerGroup
-    private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
+    private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstanceWithPath(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
 
     private bool _running = false;
     public Task Task { get; private set; }
@@ -34,7 +43,7 @@ public class PingAverage: IWorker
     private void RunLoop()
     {
         // Set up ping
-        var ping = new Ping();
+        using var ping = new Ping();
         var options = new PingOptions()
         {
             DontFragment = true
