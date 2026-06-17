@@ -6,8 +6,8 @@ namespace Tedd.Benchmarks
     [MemoryDiagnoser]
     public class ProfilerBenchmarks
     {
-        private Tedd.Legacy.Profiler _legacyProfiler;
-        private Tedd.Profiler _newProfiler;
+        private Tedd.Legacy.Profiler _legacyProfiler = null!;
+        private Tedd.Profiler _newProfiler = null!;
 
         [GlobalSetup]
         public void Setup()
