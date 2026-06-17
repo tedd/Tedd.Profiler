@@ -175,7 +175,7 @@ namespace Tedd
             }
 
             // Remove expired
-            var maxHistoryAgeTicks = Options.MaxHistoryAgeMs * 10_000;
+            long maxHistoryAgeTicks = (long)Options.MaxHistoryAgeMs * TimeSpan.TicksPerMillisecond;
             while (_timeMeasurements.TryPeek(out var tm))
             {
                 var age = _stopwatch.Elapsed.Ticks - tm.TimestampTicks;
