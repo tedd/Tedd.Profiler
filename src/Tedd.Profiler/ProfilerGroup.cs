@@ -15,7 +15,7 @@ namespace Tedd
 
         private readonly SortedDictionary<string, HashSet<Profiler>> _profilers = new SortedDictionary<string, HashSet<Profiler>>();
         private readonly ReaderWriterLockSlim _profilesLockSlim = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
-        private readonly Timer _cleanupTimer ;
+        private readonly Timer _cleanupTimer;
 
         /// <summary>
         /// Creates a new instance of Profiler with custom name.
@@ -61,7 +61,7 @@ namespace Tedd
             if (!callingMethod.IsStatic)
                 throw new Exception($"{nameof(Profiler)}() created from non-static. Creating profiler without name has huge overhead due to stack analysis. Only do so from static context so it minimizes number of times it is done.");
 
-            return CreateInstance(options, callingMethod.DeclaringType.FullName +  (name??""));
+            return CreateInstance(options, callingMethod.DeclaringType.FullName + (name ?? ""));
         }
 
         private void AddProfiler(Profiler profiler)

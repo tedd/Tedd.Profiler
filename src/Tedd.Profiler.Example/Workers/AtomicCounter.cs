@@ -2,7 +2,7 @@
 
 namespace Tedd.ProfilerExample.Workers
 {
-    public class AtomicCounter: IWorker
+    public class AtomicCounter : IWorker
     {
         private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstanceWithPath(new ProfilerOptions(ProfilerType.Counter, 100, 200, "{0:0,0}"));
 
