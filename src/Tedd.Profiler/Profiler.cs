@@ -114,8 +114,8 @@ namespace Tedd
 
         /// <summary>
         /// Add time measurements in milliseconds.
-        /// Hint: Stopwatch is a good source of high frequency timer, and it returns milliseconds.
-        /// Complexity: Time: O(1), Space: O(1)
+        /// Hint: Internally, time is stored as TimeSpan ticks (100 ns), i.e. 10,000 ticks per millisecond.
+        /// Complexity: Time: O(1), Space: O(1)
         /// </summary>
         /// <param name="ms">Number of milliseconds</param>
         /// <param name="sampleCount">Number of samples this time measurement is for (used for average calculation)</param>
