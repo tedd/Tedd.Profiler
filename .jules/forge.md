@@ -1,7 +1,7 @@
 ## 2024-05-19 - Forge Modernization Plan
 
 **Observation:** The package targets `netstandard2.0` which is still standard and broadly applicable. Tests and Example projects targeted the out-of-support `netcoreapp3.1` which fails to build and test on modern SDKs. The testing toolchains (`Microsoft.NET.Test.Sdk`) and some other packages like `Tedd.ObjectPool` are outdated. Furthermore, the codebase relies on `Stopwatch.ElapsedTicks` and assumes a frequency of 10,000 ticks per millisecond, which is inaccurate across different frameworks and platforms (like Linux/modern .NET), causing test failures. The `CounterParallelFailTest` was flaky because it expects the non-thread-safe counter to always fail parallel additions, but by chance it can occasionally succeed if the loop count or thread interleaving align perfectly. It's an issue with the test itself intentionally looking for a race condition.
-Additionally, `ProfileTimerTest` timing expectations were too tight, expecting <= 5.1s which was often exceeding by 0.05-0.1s on standard CI instances.
+Additionally, `ProfileTimerTest` timing expectations were too tight, expecting <= 5.1ms which was often exceeding by 0.05-0.1ms on standard CI instances.
 
 **Strategic Action:**
 1. Multi-target `Tedd.Profiler` to `<TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>` to provide modern baseline support while preserving existing `netstandard2.0` compatibility.
