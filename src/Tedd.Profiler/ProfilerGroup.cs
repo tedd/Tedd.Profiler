@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,7 +15,6 @@ namespace Tedd
 
         private readonly SortedDictionary<string, HashSet<Profiler>> _profilers = new SortedDictionary<string, HashSet<Profiler>>();
         private readonly ReaderWriterLockSlim _profilesLockSlim = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
-        private readonly Timer _cleanupTimer;
 
         /// <summary>
         /// Creates a new instance of Profiler with custom name.

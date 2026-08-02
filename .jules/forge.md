@@ -9,3 +9,8 @@ Additionally, `ProfileTimerTest` timing expectations were too tight, expecting <
 3. Update packages to their newest compatible versions (`Tedd.ObjectPool` to 2.0.0, test tools to newest versions).
 4. Replace `Stopwatch.ElapsedTicks` with `Stopwatch.Elapsed.Ticks` (which returns TimeSpan ticks, guaranteed to be 10,000 per ms) to ensure accurate time measurements across all target frameworks.
 5. Fix `ProfileTimerTest` by allowing up to `6.0` to accommodate minor latency in stopwatch ticks on modern hardware.
+## 2024-08-01 - Package Metadata and Code Cleanup
+
+**Observation:** Missing README.md in package metadata generated NuGet pack warnings. Unused `_cleanupTimer` field in `ProfilerGroup.cs` produced CS0169 compiler warnings.
+
+**Strategic Action:** Added `PackageReadmeFile` and `PackageTags` to `.csproj`, included `README.md` as an asset, enabled XML documentation (`GenerateDocumentationFile`), and removed the unused `_cleanupTimer` field to ensure correct and warning-free modern package creation.
