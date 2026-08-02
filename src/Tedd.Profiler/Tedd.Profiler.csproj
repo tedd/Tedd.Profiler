@@ -7,11 +7,13 @@
     <Authors>Tedd Hansen</Authors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>Initial release. Measuring working, but missing central collector for useful output.</PackageReleaseNotes>
     <RepositoryType>Git</RepositoryType>
-    <PackageTags></PackageTags>
+    <PackageTags>profiler;performance;metrics;timing</PackageTags>
     <RepositoryUrl>https://github.com/tedd/Tedd.Profiler.git</RepositoryUrl>
     <PackageProjectUrl>https://github.com/tedd/Tedd.Profiler</PackageProjectUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +22,10 @@
 
   <ItemGroup>
     <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\README.md">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
