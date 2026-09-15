@@ -13,10 +13,10 @@ For example, averaging ping times:
 public class PingAverage: IWorker
 {
     // Set up a Profiler using default ProfilerGroup
-    private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
+    private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000), "Ping");
 
     private bool _running = false;
-    public Task Task { get; private set; }
+    public Task Task { get; private set; } = Task.CompletedTask;
 
     public void Start()
     {
@@ -31,15 +31,15 @@ public class PingAverage: IWorker
         _running = false;
     }
 
-    private void RunLoop()
+    private async Task RunLoop()
     {
         // Set up ping
         var ping = new Ping();
-        var options = new PingOptions()
+        var options = new PingOptions
         {
             DontFragment = true
         };
-        var data = new String('*', 32);
+        var data = new string('*', 32);
         var buffer = Encoding.ASCII.GetBytes(data);
         var timeout = 120;
 
@@ -47,7 +47,7 @@ public class PingAverage: IWorker
         while (_running)
         {
             // Send ping
-            var reply = ping.Send("www.google.com", timeout, buffer, options);
+            var reply = await ping.SendPingAsync("www.google.com", timeout, buffer, options);
             if (reply.Status == IPStatus.Success)
             {
                 // // // // // // // // // // // // // //
@@ -57,7 +57,7 @@ public class PingAverage: IWorker
             }
 
             // Throttle so we don't flood target
-            Thread.Sleep(500);
+            await Task.Delay(500);
         }
     }
 }
@@ -127,12 +127,12 @@ var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs
 profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
 using (var timer = profiler.CreateTimer()) // We measure 100ms for one sample
 {
-    Thread.Sleep(100);
+    await Task.Delay(100);
     timer.NewSample(); // We can take multiple samples within one timer
-    Thread.Sleep(100);
+    await Task.Delay(100);
 }
 // profiler.GetValue() is now: 100.42275 ms average (4 samples over 400 ms total)
-// Result is not exactly 100 ms because Thread.Sleep has overhead + is not that accurate.
+// Result is not exactly 100 ms because Task.Delay has overhead + is not that accurate.
 ```
 ## CountAveragePerSecond
 
@@ -143,17 +143,22 @@ var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAveragePerSec
 profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
 using (var timer = profiler.CreateTimer()) // We measure 100ms for one sample
 {
-    Thread.Sleep(100);
+    await Task.Delay(100);
     timer.NewSample();
-    Thread.Sleep(100);
+    await Task.Delay(100);
 }
 // profiler.GetValue() is now: 9.995
 // Average for one sample is approximately 100ms, which is approximately 10 per second.
 ```
-# Performance
+# Architecture and Mechanics
 
-Implementations are kept simple. Objects are pooled internally for reuse.
+The profiler architecture is engineered for low latency and high concurrency, strictly utilizing deterministic data structures.
 
-The heaviest operation is averaging types, where a ConcurrentQueue keeps track of history. Adding a sample is relatively fast, but running Cleanup() (automatically run by GetValue()/GetText()) takes a bit more resources.
+**Implemented Capabilities:**
+*   **Memory Efficiency:** Internally utilizes an `ObjectPool<ProfilerTimer>` pattern to reuse instances and mitigate garbage collection pressure during high-frequency profiling.
+*   **Concurrency:** Measurement tracking leverages a thread-safe `ConcurrentQueue<TimeMeasurement>` for lock-free historical recording.
+*   **Atomic Aggregation:** Scalar values and reference counters are synchronized utilizing `Interlocked` operations to ensure absolute mathematical precision across asynchronous contexts.
 
-A modern computer should be able to reach excess of 20 million measurements per second on a single core. Even with a history of 20 million entries and cleanup every 50ms it should reach excess of 17 million samples per second. You can test different parameters yourself inside OperationsPerSecond class in the Example project.
+## Roadmap / Future Enhancements (Hypotheses)
+
+Future architectural optimizations focus on the overhead associated with the periodic `Cleanup()` execution. While current empirical testing demonstrates theoretical scalability accommodating tens of millions of samples per second, ongoing profiling will ascertain whether batched buffer aggregation could further optimize execution paths. You can execute localized empirical validation utilizing the `OperationsPerSecond` harness within the Example project.
