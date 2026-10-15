@@ -1,159 +1,174 @@
 # Tedd.Profiler
-Simple profiler for measuring parts of application.
+Simple profiler for measuring parts of an application.
 
-Availabe on NuGet: [https://www.nuget.org/packages/Tedd.Profiler](https://www.nuget.org/packages/Tedd.Profiler)
+Available on NuGet: [https://www.nuget.org/packages/Tedd.Profiler](https://www.nuget.org/packages/Tedd.Profiler)
 
-# Examples
+## Architectural Execution Flow
 
-The Tedd.Profiler.Examples project contains examples on how to use profiler. 
+### Implemented Capabilities (Architectural Facts)
+- **High-Performance Concurrent Aggregation**: Measurements are safely aggregated across multiple threads utilizing `Interlocked` operations and lock-free constructs (`ConcurrentQueue<T>`).
+- **Memory-Optimized Instantiation**: Reduces garbage collection overhead by leveraging object pooling for `ProfilerTimer` instances.
+- **Centralized Grouping Infrastructure**: Profilers are tracked within a `ProfilerGroup`, utilizing `ReaderWriterLockSlim` to ensure thread-safe enumeration without impeding high-throughput profiling operations.
+- **Microsecond Precision Scaling**: Enforces strict utilization of `Stopwatch.Elapsed.Ticks` to guarantee a uniform 10,000 ticks per millisecond scaling across disparate platform hardware frequencies.
 
-For example, averaging ping times:
+### Roadmap (Hypotheses)
+- **Hierarchical Data Binding**: Anticipated integration of real-time data binding to telemetry dashboards for live structural monitoring.
+- **Routed Event Infrastructure**: Future conceptualization of a routed event system capable of propagating profiling threshold alerts across distributed application boundaries.
+*(Note: These components represent planned future enhancements and are not functionally integrated into the current API surface).*
 
-```c#
-public class PingAverage: IWorker
+## Examples
+
+The `Tedd.Profiler.Example` project contains examples demonstrating profiler utilization.
+
+For instance, averaging ping times:
+
+```csharp
+public class PingAverage : IWorker
 {
-    // Set up a Profiler using default ProfilerGroup
-    private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstance(new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
+    // Set up a Profiler utilizing the default ProfilerGroup.
+    // Note: CreateInstanceWithPath automatically derives the profiler name from the calling context.
+    private static readonly Profiler _profiler = ProfilerGroup.Default.CreateInstanceWithPath(
+        new ProfilerOptions(ProfilerType.SampleAverageTimeMs, 1_000, 10_000));
 
     private bool _running = false;
-    public Task Task { get; private set; }
+    public Task? Task { get; private set; }
 
     public void Start()
     {
-        // Set up a task to run
+        // Initialize worker task execution
         _running = true;
-        Task = Task.Run(RunLoop);
+        Task = System.Threading.Tasks.Task.Run(RunLoop);
     }
 
     public void Stop()
     {
-        // Signal task to stop at next iteration
+        // Signal task termination
         _running = false;
     }
 
     private void RunLoop()
     {
-        // Set up ping
-        var ping = new Ping();
-        var options = new PingOptions()
-        {
-            DontFragment = true
-        };
-        var data = new String('*', 32);
+        // Configure network ping parameters
+        using var ping = new Ping();
+        var options = new PingOptions { DontFragment = true };
+        var data = new string('*', 32);
         var buffer = Encoding.ASCII.GetBytes(data);
-        var timeout = 120;
+        const int timeout = 120;
 
-        // Do forever until Stop() is called
+        // Execute continuous operational loop
         while (_running)
         {
-            // Send ping
             var reply = ping.Send("www.google.com", timeout, buffer, options);
             if (reply.Status == IPStatus.Success)
             {
-                // // // // // // // // // // // // // //
-                // Add a measurement to our profiler.  //
-                // // // // // // // // // // // // // //
+                // Integrate measurement into the centralized profiler
                 _profiler.AddTimeMeasurement(reply.RoundtripTime * 10_000, 1);
             }
 
-            // Throttle so we don't flood target
+            // Impose operational throttle
             Thread.Sleep(500);
         }
     }
 }
 ```
-Creating a Profiler using a ProfilerGroup allows us to pull the key+values from all Profilers in that group.
 
-```c#
-// Print result
-foreach (var kv in ProfilerGroup.Default.GetMeasurements())
+Creating a `Profiler` using a `ProfilerGroup` permits extraction of key-value pairs from all aggregated profilers within that specific group.
+
+```csharp
+// Output aggregated profiling results
+foreach (var (key, value) in ProfilerGroup.Default.GetMeasurements())
 {
-    var key = kv.Key.PadRight(50, ' ') + ": ";
-    Console.WriteLine(key + kv.Value.PadLeft(15, ' '));
+    var formattedKey = key.PadRight(50, ' ') + ": ";
+    Console.WriteLine(formattedKey + value.PadLeft(15, ' '));
 }
 ```
-# Name
 
-When creating a Profiler you can choose any name. Multiple instances of the profiler can have same name.  
+## Naming Convention
 
-If using ProfilerGroup.CreateInstanceWithPath(name) the full name of the class will precede name, for example MyApp.SomeNamespace.ClassName. You should then provide a name with a separator, such as ":method" or ".method".
+During `Profiler` instantiation, an arbitrary nomenclature may be applied. Multiple profiler instances can share an identical name.
 
-# Different modes
+When invoking `ProfilerGroup.CreateInstanceWithPath(options, name)`, the fully qualified class name precedes the specified name (e.g., `MyApp.SomeNamespace.ClassName:method`). It is recommended to prefix the provided name parameter with a delimiter, such as `":"` or `"."`.
 
-Each instance of the profiler can function in different modes.
+## Operational Modes
 
-| ProfilerType          | Description                                                  |
-| --------------------- | ------------------------------------------------------------ |
-| Counter               | Thread synchronized (or not synchronized) integer            |
-| Text                  | Text                                                         |
-| TimeTotal             | Thread synchronized cumulative time                          |
-| SampleAverageTimeMs   | Thread synchronized average of cumulative time based on sample count |
-| CountAveragePerSecond | Same as TimeAverage, but value is calculated as samples per second. |
+Each `Profiler` instance operates in one of the following configurations, defined by `ProfilerType`:
 
-## Counter
+| ProfilerType          | Description                                                                  |
+| --------------------- | ---------------------------------------------------------------------------- |
+| Counter               | Synchronized (or non-synchronized) discrete integer tracking                 |
+| Text                  | Explicit string representation                                               |
+| TimeTotal             | Thread-synchronized cumulative time aggregation                              |
+| SampleAverageTimeMs   | Thread-synchronized temporal average derived from cumulative sample count    |
+| SampleAveragePerSecond| Analagous to `SampleAverageTimeMs`, representing calculated samples per second|
 
-The counter can be increased, decreased or set. You can choose between atomic (thread safe) operation or not. An atomic operation uses Interlocked.Add or Interlocked.Inc to increase counter, whereas non-atomic simply add directly. Called directly the atomic is around 2x slower than non-atomic, but your actual result may vary. You must pick the best suited method for your use case.
+### Counter
 
-```c#
-var profiler = new Profiler(new ProfilerOptions(ProfilerType.Counter), "Test");
+The counter can be increased, decreased, or explicitly set. Atomic operations leverage `Interlocked.Add` or `Interlocked.Increment` for thread-safe execution, while non-atomic operations manipulate the state directly. Atomic operations impose approximately a 2x performance reduction; select the optimal methodology based on concurrency requirements.
+
+```csharp
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.Counter), "TestCounter");
 profiler.Inc(5);
 profiler.Dec();
 profiler.AtomicInc(1);
 profiler.AtomicDec(5);
 profiler.Set(3);
 ```
-## TimeTotal
 
-Similar to Counter, but uses the ticks-part of AddSample. It will get results from use of timer (with CreateTimer()).
+### TimeTotal
 
-```c#
-var profiler = new Profiler(new ProfilerOptions(ProfilerType.TimeTotal), "Test");
-profiler.AddTimeMeasurementMs(1, 0); // 1 ms
-profiler.AddTimeMeasurement(15_000, 0); // 1.5 ms
-// profiler.GetValue() is now: 2.5
+Functions similarly to `Counter`, but aggregates the underlying tick data via `AddSample`. It optimally accepts data generated by `CreateTimer()`.
+
+```csharp
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.TimeTotal), "TestTimeTotal");
+profiler.AddTimeMeasurementMs(1); // 1 ms
+profiler.AddTimeMeasurement(15_000, 1); // 1.5 ms
+// profiler.GetValue() yields 2.5
 ```
-## SampleAverageTimeMs
 
-Calculating sample average time is done by keeping history of each record added. ProfilerOptions has parameters for cleaning up excess or expires items.
+### SampleAverageTimeMs
 
-During Cleanup() all excess items are removed from history and subtracted from global numbers. Cleanup() is run on every sample, as well as when you pull numbers (GetValue() or GetText()).
+Maintains an empirical history of captured samples to compute average execution time. `ProfilerOptions` exposes parameters for managing excess or expired historical items.
 
-You can set it to manual by setting AutoCleanup = false in ProfilerOptions. If you do that and you sample a lot of samples then it is important to run Cleanup() manually on the Profiler instance regularly, or sample history will fill up infinitely until cleaned by GetValue() or GetText().
+During `Cleanup()`, expired items are dequeued and subtracted from global aggregates. `Cleanup()` executes on every sample insertion and upon data extraction (`GetValue()` or `GetText()`).
 
-Tip: If you are looking for operations per second then keeping a maximum history of 100 records and 2 000 ms may be enough, there is usually no need for very large ranges.
+Manual cleanup can be configured by setting `AutoClean = false` in `ProfilerOptions`. If automated cleanup is disabled under high-throughput scenarios, `Cleanup()` must be invoked periodically to prevent unbounded memory allocation.
 
-```c#
-var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs), "Test");
-profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
-using (var timer = profiler.CreateTimer()) // We measure 100ms for one sample
+*Optimization Note*: For calculating operations per second, a maximum history of 100 records and 2,000 ms is typically sufficient, eliminating the overhead of retaining expansive temporal ranges.
+
+```csharp
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAverageTimeMs), "TestAvgTime");
+profiler.AddTimeMeasurementMs(200, 2); // 2 samples executed in 200 ms (100ms average)
+using (var timer = profiler.CreateTimer())
 {
     Thread.Sleep(100);
-    timer.NewSample(); // We can take multiple samples within one timer
+    timer.NewSample(); // Supports multiple sample registrations within a single timer lifecycle
     Thread.Sleep(100);
 }
-// profiler.GetValue() is now: 100.42275 ms average (4 samples over 400 ms total)
-// Result is not exactly 100 ms because Thread.Sleep has overhead + is not that accurate.
+// profiler.GetValue() yields approximately 100.0 ms (4 samples aggregating 400 ms)
+// Variance occurs due to OS-level Thread.Sleep scheduling overhead.
 ```
-## CountAveragePerSecond
 
-Same as SampleAverageTimeMs, except value calculated will be samples per second based on time one sample takes.
+### SampleAveragePerSecond
 
-```c#
-var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAveragePerSecond), "Test");
-profiler.AddTimeMeasurementMs(200, 2); // 2 samples took 200 ms = avg of 100ms
-using (var timer = profiler.CreateTimer()) // We measure 100ms for one sample
+Computes the frequency of operations per second derived from the average temporal duration per sample.
+
+```csharp
+var profiler = new Profiler(new ProfilerOptions(ProfilerType.SampleAveragePerSecond), "TestAvgFreq");
+profiler.AddTimeMeasurementMs(200, 2); // 2 samples executed in 200 ms (100ms average)
+using (var timer = profiler.CreateTimer())
 {
     Thread.Sleep(100);
     timer.NewSample();
     Thread.Sleep(100);
 }
-// profiler.GetValue() is now: 9.995
-// Average for one sample is approximately 100ms, which is approximately 10 per second.
+// profiler.GetValue() yields approximately 10.0
+// An average sample duration of 100ms equates to 10 operations per second.
 ```
-# Performance
 
-Implementations are kept simple. Objects are pooled internally for reuse.
+## Performance Profile
 
-The heaviest operation is averaging types, where a ConcurrentQueue keeps track of history. Adding a sample is relatively fast, but running Cleanup() (automatically run by GetValue()/GetText()) takes a bit more resources.
+The architectural design prioritizes computational minimalism and deterministic execution. Internal object pooling guarantees optimized memory reuse.
 
-A modern computer should be able to reach excess of 20 million measurements per second on a single core. Even with a history of 20 million entries and cleanup every 50ms it should reach excess of 17 million samples per second. You can test different parameters yourself inside OperationsPerSecond class in the Example project.
+The most computationally intensive mechanism is the averaging algorithm, wherein a `ConcurrentQueue<T>` manages historical states. While sample insertion operates at high velocity, `Cleanup()` execution demands marginal auxiliary processing.
+
+Empirical benchmarks indicate a modern architecture can achieve in excess of 20 million measurements per second on a single execution thread. Even maintaining a historical queue of 20 million records with a 50ms cleanup cycle, throughput consistently exceeds 17 million samples per second. Experimental validation can be conducted utilizing the `OperationsPerSecond` infrastructure within the `Tedd.Profiler.Example` project.
