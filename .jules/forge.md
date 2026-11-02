@@ -9,3 +9,9 @@ Additionally, `ProfileTimerTest` timing expectations were too tight, expecting <
 3. Update packages to their newest compatible versions (`Tedd.ObjectPool` to 2.0.0, test tools to newest versions).
 4. Replace `Stopwatch.ElapsedTicks` with `Stopwatch.Elapsed.Ticks` (which returns TimeSpan ticks, guaranteed to be 10,000 per ms) to ensure accurate time measurements across all target frameworks.
 5. Fix `ProfileTimerTest` by allowing up to `6.0` to accommodate minor latency in stopwatch ticks on modern hardware.
+
+## 2026-11-02 - Test and Archive Dependency Upgrades
+
+**Observation:** The test project `Tedd.Profiler.Tests` and the archive project `Tedd.Profiler.Archive` were using outdated dependency versions, namely `coverlet.collector` (6.0.0), `Microsoft.NET.Test.Sdk` (17.8.0), `xunit.runner.visualstudio` (2.8.0), and `Tedd.ObjectPool` (1.0.1).
+
+**Strategic Action:** Updated `coverlet.collector` to `10.1.0`, `Microsoft.NET.Test.Sdk` to `18.11.0`, `xunit.runner.visualstudio` to `4.0.1` in `Tedd.Profiler.Tests.csproj` and `Tedd.ObjectPool` to `2.0.0` in `Tedd.Profiler.Archive.csproj` to align with newest compatible stable versions.
